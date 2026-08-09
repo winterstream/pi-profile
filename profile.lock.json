@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "packages": {
+    "agent-stuff": {
+      "kind": "git",
+      "repository": "https://github.com/winterstream/agent-stuff.git",
+      "ref": "main",
+      "revision": "97ebafbb4d62cacf192197fbaa289a445582d083",
+      "source": "git:github.com/winterstream/agent-stuff@97ebafbb4d62cacf192197fbaa289a445582d083"
+    },
+    "pi-ghostty": {
+      "kind": "git",
+      "repository": "https://github.com/HazAT/pi-ghostty.git",
+      "ref": "main",
+      "revision": "f414a831db7f097abc59fbc91f4e9296db2c092d",
+      "source": "git:github.com/HazAT/pi-ghostty@f414a831db7f097abc59fbc91f4e9296db2c092d"
+    },
+    "pi-subagents": {
+      "kind": "git",
+      "repository": "https://github.com/nicobailon/pi-subagents.git",
+      "ref": "main",
+      "revision": "685df610f346106d22b668831139db460e3e405d",
+      "source": "git:github.com/nicobailon/pi-subagents@685df610f346106d22b668831139db460e3e405d"
+    },
+    "pi-jj": {
+      "kind": "git",
+      "repository": "https://github.com/manojlds/pi-jj.git",
+      "ref": "main",
+      "revision": "690a95fa17c4622b8cabd6d5253f9c75e60663f7",
+      "source": "git:github.com/manojlds/pi-jj@690a95fa17c4622b8cabd6d5253f9c75e60663f7"
+    },
+    "pi-blackhole": {
+      "kind": "npm",
+      "package": "pi-blackhole",
+      "version": "0.4.5",
+      "source": "npm:pi-blackhole@0.4.5"
+    },
+    "pi-autoresearch": {
+      "kind": "npm",
+      "package": "pi-autoresearch",
+      "version": "1.6.2",
+      "source": "npm:pi-autoresearch@1.6.2"
+    },
+    "pi-wayfinder": {
+      "kind": "npm",
+      "package": "@deevus/pi-wayfinder",
+      "version": "0.3.2",
+      "source": "npm:@deevus/pi-wayfinder@0.3.2"
+    }
+  }
+}

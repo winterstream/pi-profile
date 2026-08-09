@@ -1,0 +1,15 @@
+# Pi's project-local package checkouts and runtime state
+.pi/git/
+.pi/npm/
+.pi/sessions/
+
+# Local/global profile reconciliation state
+.pi-profile-state.json
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+.lsp/
+.clj-kondo/

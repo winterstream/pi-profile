@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=scripts/lib.sh
+source "$ROOT/scripts/lib.sh"
+
+command -v git >/dev/null || { echo 'git is required' >&2; exit 1; }
+command -v jq >/dev/null || { echo 'jq is required' >&2; exit 1; }
+
+lock_tmp="$(mktemp "${TMPDIR:-/tmp}/pi-profile-lock.XXXXXX")"
+trap 'rm -f "$lock_tmp"' EXIT
+cp "$PROFILE_LOCK" "$lock_tmp"
+
+while IFS=$'\t' read -r id repository ref; do
+  [ -n "$id" ] || continue
+  printf 'resolving %s (%s)\n' "$id" "$ref"
+  revision="$(git ls-remote "$repository" "$ref" | awk 'NF { print $1; exit }')"
+  if ! [[ "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "could not resolve $id from $repository@$ref" >&2
+    exit 1
+  fi
+  next="$(mktemp "${TMPDIR:-/tmp}/pi-profile-lock-next.XXXXXX")"
+  jq --arg id "$id" --arg revision "$revision" '
+    .packages[$id].revision = $revision
+    | .packages[$id].source = ((.packages[$id].source | sub("@[0-9a-f]{40}$"; "")) + "@" + $revision)
+  ' "$lock_tmp" > "$next"
+  mv "$next" "$lock_tmp"
+done < <(jq -r '.packages[] | select(.kind == "git") | [.id, .repository, .ref] | @tsv' "$PROFILE_FILE")
+
+while IFS=$'\t' read -r id package version; do
+  [ -n "$id" ] || continue
+  command -v npm >/dev/null || { echo 'npm is required to validate npm pins' >&2; exit 1; }
+  resolved="$(npm view "$package@$version" version 2>/dev/null || true)"
+  if [ "$resolved" != "$version" ]; then
+    echo "could not validate npm pin $package@$version" >&2
+    exit 1
+  fi
+done < <(jq -r '.packages[] | select(.kind == "npm") | [.id, .package, .version] | @tsv' "$PROFILE_FILE")
+
+mv "$lock_tmp" "$PROFILE_LOCK"
+trap - EXIT
+"$ROOT/scripts/sync-settings"
+printf 'updated Git pins and validated npm pins\n'

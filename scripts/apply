@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=scripts/lib.sh
+source "$ROOT/scripts/lib.sh"
+
+dry_run=false
+if [ "${1:-}" = "--dry-run" ]; then
+  dry_run=true
+  shift
+fi
+if [ "$#" -ne 0 ]; then
+  echo 'usage: scripts/apply [--dry-run]' >&2
+  exit 1
+fi
+
+"$ROOT/scripts/check"
+entries="$(profile_entries_json)"
+sources="$(profile_sources_json)"
+
+if "$dry_run"; then
+  printf '%s\n' 'would install/update:'
+  jq -r '.[]' <<<"$sources"
+  printf '%s\n' 'would reconcile global Pi settings while preserving unrelated entries'
+  exit 0
+fi
+
+command -v pi >/dev/null || {
+  echo 'pi is required; install Pi before applying this profile' >&2
+  exit 1
+}
+
+mkdir -p "$PI_DIR"
+settings="$PI_DIR/settings.json"
+if [ -L "$settings" ]; then
+  echo "refusing to replace symlinked settings file: $settings" >&2
+  exit 1
+fi
+[ -f "$settings" ] || printf '{}\n' > "$settings"
+
+while IFS= read -r source; do
+  [ -n "$source" ] || continue
+  printf 'installing %s\n' "$source"
+  pi install "$source"
+done < <(jq -r '.[]' <<<"$sources")
+
+settings_tmp="$(mktemp "${TMPDIR:-/tmp}/pi-profile-global-settings.XXXXXX")"
+trap 'rm -f "$settings_tmp"' EXIT
+
+if [ -f "$PROFILE_STATE" ]; then
+  while IFS= read -r source; do
+    [ -n "$source" ] || continue
+    next="$(mktemp "${TMPDIR:-/tmp}/pi-profile-global-settings-next.XXXXXX")"
+    jq --arg source "$source" '
+      .packages = [
+        (.packages // [])[]
+        | select(
+            (type == "string" and . != $source)
+            or (type == "object" and (.source // "") != $source)
+          )
+      ]
+    ' "$settings" > "$next"
+    mv "$next" "$settings"
+  done < <(jq -r '.sources[]?' "$PROFILE_STATE")
+fi
+
+jq --argjson additions "$entries" '.packages = ((.packages // []) + $additions)' "$settings" > "$settings_tmp"
+mv "$settings_tmp" "$settings"
+trap - EXIT
+
+state_tmp="$(mktemp "${TMPDIR:-/tmp}/pi-profile-state.XXXXXX")"
+trap 'rm -f "$state_tmp"' EXIT
+jq -n \
+  --argjson sources "$sources" \
+  --arg updatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  '{version: 1, sources: $sources, updatedAt: $updatedAt}' > "$state_tmp"
+mv "$state_tmp" "$PROFILE_STATE"
+trap - EXIT
+printf 'applied pi-profile to %s\n' "$PI_DIR"
