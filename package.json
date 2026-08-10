@@ -1,0 +1,46 @@
+{
+  "name": "pi-profile",
+  "version": "0.1.0",
+  "description": "Pinned external Pi skills, extensions, and packages.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/winterstream/pi-profile.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi-skill"
+  ],
+  "dependencies": {
+    "pi-ghostty": "https://github.com/HazAT/pi-ghostty/archive/f414a831db7f097abc59fbc91f4e9296db2c092d.tar.gz",
+    "pi-subagents": "https://github.com/nicobailon/pi-subagents/archive/e55f08307c87000f400b47123055e8e29a9b9da9.tar.gz",
+    "pi-jj": "https://github.com/manojlds/pi-jj/archive/690a95fa17c4622b8cabd6d5253f9c75e60663f7.tar.gz",
+    "pi-blackhole": "0.4.5",
+    "pi-autoresearch": "1.6.2",
+    "@deevus/pi-wayfinder": "0.3.2"
+  },
+  "bundledDependencies": [
+    "pi-ghostty",
+    "pi-subagents",
+    "pi-jj",
+    "pi-blackhole",
+    "pi-autoresearch",
+    "@deevus/pi-wayfinder"
+  ],
+  "pi": {
+    "extensions": [
+      "./node_modules/pi-ghostty/extensions",
+      "./node_modules/pi-subagents/index.ts",
+      "./node_modules/pi-jj/index.ts",
+      "./node_modules/pi-blackhole/dist/index.js",
+      "./node_modules/pi-autoresearch/extensions",
+      "./node_modules/@deevus/pi-wayfinder/src/index.ts"
+    ],
+    "skills": [
+      "./node_modules/pi-subagents/skills",
+      "./node_modules/pi-jj/skills",
+      "./node_modules/pi-autoresearch/skills"
+    ]
+  }
+}

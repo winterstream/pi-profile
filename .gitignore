@@ -1,3 +1,6 @@
+node_modules/
+npm-debug.log*
+
 # Pi's project-local package checkouts and runtime state
 .pi/git/
 .pi/npm/

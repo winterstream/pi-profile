@@ -1,71 +1,64 @@
 # pi-profile
 
-Portable Pi configuration for the skills, extensions, and packages used in my
-workflow.
+A native Pi meta-package for the external skills, extensions, and packages used
+in my workflow.
 
-This repository is a **control plane**, not a copy of the package contents.
-Private skills and extensions remain in
-[`winterstream/agent-stuff`](https://github.com/winterstream/agent-stuff); the
-other resources remain in their upstream repositories.
+`pi-profile` contains package metadata only. It does not copy package contents,
+manage `~/.pi/agent/skills`, or manage `agent-stuff`.
 
-## Contents
+## Install
 
-- `profile.json` — canonical package list, resource filters, provenance, and
-  edit policy.
-- `profile.lock.json` — exact Git revisions and npm versions used for
-  reproducible installs.
-- `.pi/settings.json` — generated project-local Pi settings for testing this
-  profile.
-- `scripts/apply` — install the locked packages into the global Pi profile
-  without replacing unrelated settings.
-- `scripts/update` — refresh Git pins and validate npm pins.
-- `scripts/check` — validate the manifest and generated settings.
-
-## Project-local use
-
-Clone this repository, install Pi by any supported method, then run Pi from the
-checkout:
+Install the profile globally with Pi:
 
 ```sh
-git clone git@github.com:winterstream/pi-profile.git
-cd pi-profile
-./scripts/check
-pi
+pi install git:github.com/winterstream/pi-profile@main
 ```
 
-Pi will ask you to trust the project before loading `.pi/settings.json` and
-installing its project-local packages.
-
-## Global use
-
-To make the profile available from unrelated workspaces, apply it to the
-machine's global Pi settings:
+For a local checkout while developing the profile:
 
 ```sh
-./scripts/apply
+npm ci
+pi install "$PWD"
 ```
 
-The apply script manages only the package entries recorded in its own state
-file. It preserves credentials, models, sessions, and unrelated settings.
+Pi installs the profile's pinned dependencies and loads their resources from the
+profile package root. The profile's external package pins are maintained in
+`package.json` and `package-lock.json`.
 
-Use `./scripts/apply --dry-run` to inspect the planned changes first.
+## Local agent-stuff
 
-## Updating
-
-Review package updates explicitly:
+Private, frequently edited resources are intentionally separate from this
+package. Clone `winterstream/agent-stuff`, then run its setup command:
 
 ```sh
-./scripts/update
-./scripts/check
-git diff -- profile.lock.json .pi/settings.json
+git clone git@github.com:winterstream/agent-stuff.git ~/.pi/agent-stuff
+~/.pi/agent-stuff/scripts/setup
 ```
 
-Git packages are pinned to commit revisions. Extensions execute with full
-process access, so review upstream changes before applying updated pins.
+The setup command links the checkout's skills, extensions, themes, and prompt
+commands into the global Pi resource directories. Changes made through those
+links modify the `agent-stuff` checkout directly; they can be reviewed and
+published with its JJ workflow.
 
-## Platform-specific setup
+Set `PI_AGENT_STUFF_DIR` to use a different checkout location. Set
+`PI_CODING_AGENT_DIR` to use a different Pi state directory.
 
-The profile intentionally does not contain Nix, Home Manager, tmux binaries,
-Hammerspoon configuration, credentials, or other machine-specific state. Those
-can be installed by an optional platform bootstrap while this repository remains
-the portable Pi layer.
+## Updating external packages
+
+Review upstream changes explicitly, then update the dependency specification and
+lockfile:
+
+```sh
+npm install --package-lock-only --ignore-scripts
+npm ci --ignore-scripts --omit=dev
+```
+
+GitHub dependencies are pinned to commit-specific HTTPS tarballs. Review source
+changes before updating those pins. Pi packages execute with full process
+access; review third-party extensions before installing them.
+
+## Home Manager
+
+Home Manager may run the same `pi install` command during activation as a
+convenience. It should manage Pi and stable settings, not local `agent-stuff`
+resources or package materialization.
