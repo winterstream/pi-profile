@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=scripts/lib.sh
+source "$ROOT/scripts/lib.sh"
+
+skills_dir="$PI_DIR/skills"
+extensions_dir="$PI_DIR/extensions"
+mkdir -p "$skills_dir" "$extensions_dir"
+
+declare -A desired_skills=()
+
+installed_root() {
+  local source="$1" path spec name
+  case "$source" in
+    git:*)
+      path="${source#git:}"
+      path="${path%@*}"
+      printf '%s/git/%s\n' "$PI_DIR" "$path"
+      ;;
+    npm:*)
+      spec="${source#npm:}"
+      name="${spec%@*}"
+      printf '%s/npm/node_modules/%s\n' "$PI_DIR" "$name"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+add_skill() {
+  local target="$1" name
+  name="$(basename "$target")"
+  if [ -n "${desired_skills[$name]:-}" ] && [ "${desired_skills[$name]}" != "$target" ]; then
+    printf 'skill name collision: %s (%s, %s)\n' "$name" "${desired_skills[$name]}" "$target" >&2
+    return 1
+  fi
+  desired_skills["$name"]="$target"
+}
+
+collect_skill_path() {
+  local path="$1"
+  if [ -f "$path" ]; then
+    [ "$(basename "$path")" = SKILL.md ] && add_skill "$(dirname "$path")"
+    return
+  fi
+  [ -d "$path" ] || return
+  while IFS= read -r -d '' skill_file; do
+    add_skill "$(dirname "$skill_file")"
+  done < <(find "$path" -type f -name SKILL.md -not -path '*/.git/*' -not -path '*/node_modules/*' -print0)
+}
+
+while IFS= read -r entry; do
+  source="$(jq -r 'if type == "string" then . else .source end' <<<"$entry")"
+  root="$(installed_root "$source")"
+  [ -d "$root" ] || {
+    printf 'installed package not found for %s: %s\n' "$source" "$root" >&2
+    exit 1
+  }
+  package_json="$root/package.json"
+  [ -f "$package_json" ] || continue
+
+  while IFS= read -r resource_path; do
+    [ -n "$resource_path" ] || continue
+    path="$root/${resource_path#./}"
+    if [[ "$path" == *\** || "$path" == *\?* || "$path" == *\[* ]]; then
+      while IFS= read -r -d '' match; do
+        collect_skill_path "$match"
+      done < <(find "$root" -path "$path" -print0 2>/dev/null)
+    else
+      collect_skill_path "$path"
+    fi
+  done < <(jq -r '.pi.skills[]?' "$package_json")
+done < <(profile_entries_json | jq -c '.[]')
+
+if [ -f "$PROFILE_STATE" ]; then
+  while IFS= read -r link; do
+    [ -n "$link" ] || continue
+    case "$link" in
+      "$skills_dir/"*|"$extensions_dir/"*)
+        [ -L "$link" ] && rm -f "$link"
+        ;;
+    esac
+  done < <(jq -r '.resources.skills[]?.link, .resources.extensions[]?.link' "$PROFILE_STATE" 2>/dev/null || true)
+fi
+
+for name in "${!desired_skills[@]}"; do
+  target="${desired_skills[$name]}"
+  link="$skills_dir/$name"
+  if [ -e "$link" ] || [ -L "$link" ]; then
+    current="$(readlink "$link" 2>/dev/null || true)"
+    [ "$current" = "$target" ] || {
+      printf 'skill name is already provided by another source: %s\n' "$link" >&2
+      exit 1
+    }
+    continue
+  fi
+  ln -s "$target" "$link"
+done
+
+skills_json="$({
+  for name in "${!desired_skills[@]}"; do
+    printf '%s\t%s\t%s/%s\n' "$name" "${desired_skills[$name]}" "$skills_dir" "$name"
+  done
+} | sort | jq -R -s 'split("\n") | map(select(length > 0) | split("\t") | {name: .[0], target: .[1], link: .[2]})')"
+jq -n --argjson skills "$skills_json" '{skills: $skills, extensions: []}'

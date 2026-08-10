@@ -44,6 +44,7 @@ while IFS= read -r source; do
   printf 'installing %s\n' "$source"
   pi install "$source"
 done < <(jq -r '.[]' <<<"$sources")
+resources="$("$ROOT/scripts/materialize")"
 
 settings_tmp="$(mktemp "${TMPDIR:-/tmp}/pi-profile-global-settings.XXXXXX")"
 trap 'rm -f "$settings_tmp"' EXIT
@@ -73,8 +74,9 @@ state_tmp="$(mktemp "${TMPDIR:-/tmp}/pi-profile-state.XXXXXX")"
 trap 'rm -f "$state_tmp"' EXIT
 jq -n \
   --argjson sources "$sources" \
+  --argjson resources "$resources" \
   --arg updatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  '{version: 1, sources: $sources, updatedAt: $updatedAt}' > "$state_tmp"
+  '{version: 1, sources: $sources, resources: $resources, updatedAt: $updatedAt}' > "$state_tmp"
 mv "$state_tmp" "$PROFILE_STATE"
 trap - EXIT
 printf 'applied pi-profile to %s\n' "$PI_DIR"
