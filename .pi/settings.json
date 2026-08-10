@@ -1,8 +1,8 @@
 {
   "packages": [
-    "git:github.com/winterstream/agent-stuff@97ebafbb4d62cacf192197fbaa289a445582d083",
+    "git:github.com/winterstream/agent-stuff@224cb94f27d153310dab012dccc455ff346f802d",
     "git:github.com/HazAT/pi-ghostty@f414a831db7f097abc59fbc91f4e9296db2c092d",
-    "git:github.com/nicobailon/pi-subagents@685df610f346106d22b668831139db460e3e405d",
+    "git:github.com/nicobailon/pi-subagents@e55f08307c87000f400b47123055e8e29a9b9da9",
     "git:github.com/manojlds/pi-jj@690a95fa17c4622b8cabd6d5253f9c75e60663f7",
     "npm:pi-blackhole@0.4.5",
     "npm:pi-autoresearch@1.6.2",

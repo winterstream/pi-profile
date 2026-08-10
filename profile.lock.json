@@ -5,8 +5,8 @@
       "kind": "git",
       "repository": "https://github.com/winterstream/agent-stuff.git",
       "ref": "main",
-      "revision": "97ebafbb4d62cacf192197fbaa289a445582d083",
-      "source": "git:github.com/winterstream/agent-stuff@97ebafbb4d62cacf192197fbaa289a445582d083"
+      "revision": "224cb94f27d153310dab012dccc455ff346f802d",
+      "source": "git:github.com/winterstream/agent-stuff@224cb94f27d153310dab012dccc455ff346f802d"
     },
     "pi-ghostty": {
       "kind": "git",
@@ -19,8 +19,8 @@
       "kind": "git",
       "repository": "https://github.com/nicobailon/pi-subagents.git",
       "ref": "main",
-      "revision": "685df610f346106d22b668831139db460e3e405d",
-      "source": "git:github.com/nicobailon/pi-subagents@685df610f346106d22b668831139db460e3e405d"
+      "revision": "e55f08307c87000f400b47123055e8e29a9b9da9",
+      "source": "git:github.com/nicobailon/pi-subagents@e55f08307c87000f400b47123055e8e29a9b9da9"
     },
     "pi-jj": {
       "kind": "git",
