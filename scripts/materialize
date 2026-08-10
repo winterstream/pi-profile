@@ -10,6 +10,8 @@ extensions_dir="$PI_DIR/extensions"
 mkdir -p "$skills_dir" "$extensions_dir"
 
 declare -A desired_skills=()
+declare -A desired_extensions=()
+declare -A direct_extension_manifests=()
 
 installed_root() {
   local source="$1" path spec name
@@ -30,6 +32,13 @@ installed_root() {
   esac
 }
 
+package_slug() {
+  local root="$1" name
+  name="$(jq -r '.name // empty' "$root/package.json")"
+  name="${name##*/}"
+  printf '%s' "${name:-$(basename "$root")}" | tr -c '[:alnum:]_.-' '-'
+}
+
 add_skill() {
   local target="$1" name
   name="$(basename "$target")"
@@ -38,6 +47,15 @@ add_skill() {
     return 1
   fi
   desired_skills["$name"]="$target"
+}
+
+add_extension_package() {
+  local name="$1" target="$2"
+  if [ -n "${desired_extensions[$name]:-}" ] && [ "${desired_extensions[$name]}" != "$target" ]; then
+    printf 'extension package collision: %s (%s, %s)\n' "$name" "${desired_extensions[$name]}" "$target" >&2
+    return 1
+  fi
+  desired_extensions["$name"]="$target"
 }
 
 collect_skill_path() {
@@ -52,6 +70,29 @@ collect_skill_path() {
   done < <(find "$path" -type f -name SKILL.md -not -path '*/.git/*' -not -path '*/node_modules/*' -print0)
 }
 
+prepare_extension_package() {
+  local name="$1" root="$2" wrapper tmp item basename
+  wrapper="$extensions_dir/$name"
+  tmp="$extensions_dir/.${name}.tmp.$$"
+  rm -rf "$tmp"
+  mkdir "$tmp"
+
+  while IFS= read -r -d '' item; do
+    basename="$(basename "$item")"
+    if [ "$basename" = package.json ] || [ "$basename" = .git ]; then
+      continue
+    fi
+    ln -s "$item" "$tmp/$basename"
+  done < <(find "$root" -mindepth 1 -maxdepth 1 -print0)
+
+  if [ -n "${direct_extension_manifests[$name]:-}" ]; then
+    jq '{name, type, pi: {extensions: .pi.extensions}}' "$root/package.json" > "$tmp/package.json"
+  fi
+
+  rm -rf "$wrapper"
+  mv "$tmp" "$wrapper"
+}
+
 while IFS= read -r entry; do
   source="$(jq -r 'if type == "string" then . else .source end' <<<"$entry")"
   root="$(installed_root "$source")"
@@ -61,6 +102,20 @@ while IFS= read -r entry; do
   }
   package_json="$root/package.json"
   [ -f "$package_json" ] || continue
+  slug="$(package_slug "$root")"
+
+  if jq -e '.pi.extensions | type == "array" and length > 0' "$package_json" >/dev/null 2>&1; then
+    add_extension_package "$slug" "$root"
+    direct=true
+    while IFS= read -r resource_path; do
+      [ -n "$resource_path" ] || continue
+      path="$root/${resource_path#./}"
+      if [[ "$path" == *\** || "$path" == *\?* || "$path" == *\[* ]] || [ ! -f "$path" ]; then
+        direct=false
+      fi
+    done < <(jq -r '.pi.extensions[]?' "$package_json")
+    [ "$direct" = true ] && direct_extension_manifests["$slug"]="$root"
+  fi
 
   while IFS= read -r resource_path; do
     [ -n "$resource_path" ] || continue
@@ -79,9 +134,8 @@ if [ -f "$PROFILE_STATE" ]; then
   while IFS= read -r link; do
     [ -n "$link" ] || continue
     case "$link" in
-      "$skills_dir/"*|"$extensions_dir/"*)
-        [ -L "$link" ] && rm -f "$link"
-        ;;
+      "$skills_dir/"*) [ -L "$link" ] && rm -f "$link" ;;
+      "$extensions_dir/"*) [ -L "$link" ] && rm -f "$link" || [ -d "$link" ] && rm -rf "$link" ;;
     esac
   done < <(jq -r '.resources.skills[]?.link, .resources.extensions[]?.link' "$PROFILE_STATE" 2>/dev/null || true)
 fi
@@ -100,9 +154,18 @@ for name in "${!desired_skills[@]}"; do
   ln -s "$target" "$link"
 done
 
-skills_json="$({
-  for name in "${!desired_skills[@]}"; do
-    printf '%s\t%s\t%s/%s\n' "$name" "${desired_skills[$name]}" "$skills_dir" "$name"
-  done
-} | sort | jq -R -s 'split("\n") | map(select(length > 0) | split("\t") | {name: .[0], target: .[1], link: .[2]})')"
-jq -n --argjson skills "$skills_json" '{skills: $skills, extensions: []}'
+for name in "${!desired_extensions[@]}"; do
+  prepare_extension_package "$name" "${desired_extensions[$name]}"
+done
+
+resource_json() {
+  local directory="$1"
+  local -n resources="$2"
+  for name in "${!resources[@]}"; do
+    printf '%s\t%s\t%s/%s\n' "$name" "${resources[$name]}" "$directory" "$name"
+  done | sort | jq -R -s 'split("\n") | map(select(length > 0) | split("\t") | {name: .[0], target: .[1], link: .[2]})'
+}
+
+skills_json="$(resource_json "$skills_dir" desired_skills)"
+extensions_json="$(resource_json "$extensions_dir" desired_extensions)"
+jq -n --argjson skills "$skills_json" --argjson extensions "$extensions_json" '{skills: $skills, extensions: $extensions}'
