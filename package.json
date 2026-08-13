@@ -41,6 +41,7 @@
     "skills": [
       "./node_modules/pi-subagents/skills",
       "./node_modules/pi-jj/skills",
+      "./node_modules/pi-context/skills",
       "./node_modules/pi-autoresearch/skills"
     ]
   }
