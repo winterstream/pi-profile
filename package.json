@@ -13,9 +13,9 @@
     "pi-skill"
   ],
   "dependencies": {
-    "pi-ghostty": "https://github.com/HazAT/pi-ghostty/archive/f414a831db7f097abc59fbc91f4e9296db2c092d.tar.gz",
-    "pi-subagents": "https://github.com/nicobailon/pi-subagents/archive/e55f08307c87000f400b47123055e8e29a9b9da9.tar.gz",
-    "pi-jj": "https://github.com/manojlds/pi-jj/archive/690a95fa17c4622b8cabd6d5253f9c75e60663f7.tar.gz",
+    "pi-ghostty": "1.0.0",
+    "pi-subagents": "0.49.0",
+    "pi-jj": "0.3.0",
     "pi-context": "2.1.2",
     "pi-autoresearch": "1.6.2",
     "@deevus/pi-wayfinder": "0.3.2"
