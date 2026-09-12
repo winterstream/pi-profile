@@ -13,7 +13,6 @@
     "pi-skill"
   ],
   "dependencies": {
-    "@deevus/pi-wayfinder": "0.3.2",
     "pi-autoresearch": "1.6.2",
     "pi-context": "2.1.2",
     "pi-ghostty": "1.0.0",
@@ -23,8 +22,7 @@
     "pi-ghostty",
     "pi-subagents",
     "pi-context",
-    "pi-autoresearch",
-    "@deevus/pi-wayfinder"
+    "pi-autoresearch"
   ],
   "pi": {
     "extensions": [
@@ -32,8 +30,7 @@
       "./node_modules/pi-subagents/index.ts",
       "./node_modules/pi-context/src/index.ts",
       "./node_modules/pi-context/src/context.ts",
-      "./node_modules/pi-autoresearch/extensions",
-      "./node_modules/@deevus/pi-wayfinder/src/index.ts"
+      "./node_modules/pi-autoresearch/extensions"
     ],
     "skills": [
       "./node_modules/pi-subagents/skills",
