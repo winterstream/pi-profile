@@ -13,10 +13,10 @@
     "pi-skill"
   ],
   "dependencies": {
+    "@earendil-works/pi-durable": "1.5.2",
     "pi-autoresearch": "1.9.0",
     "pi-ghostty": "1.0.0",
-    "pi-subagents": "0.80.0",
-    "@earendil-works/pi-durable": "1.4.0"
+    "pi-subagents": "0.88.1"
   },
   "bundledDependencies": [
     "pi-ghostty",
@@ -26,12 +26,15 @@
   "pi": {
     "extensions": [
       "./node_modules/pi-ghostty/extensions",
-      "./node_modules/pi-subagents/index.ts",
+      "./node_modules/pi-subagents/bundle/index.js",
       "./node_modules/pi-autoresearch/extensions"
     ],
     "skills": [
       "./node_modules/pi-subagents/skills",
       "./node_modules/pi-autoresearch/skills"
+    ],
+    "prompts": [
+      "./node_modules/pi-subagents/prompts"
     ]
   }
 }
